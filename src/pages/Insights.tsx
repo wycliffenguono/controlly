@@ -16,22 +16,24 @@ const Insights = () => {
   const [view, setView] = useState<'growth'|'usage'>('growth');
 
   // users for summary
-  const { data: usersData = [] } = useAsync<User[]>(() => api.listUsers(), []);
-  const users = usersData ?? [];
+const { data: customersData = [] } = useAsync(() => api.getCustomers(), []);
+  const users = customersData ?? [];
 
   // usage data
   const { data: usageData, loading } = useAsync<UsageResponse>(() => api.getUsage({ days }), [days]);
 
+    const points = usageData?.points ?? [];
+
+
   const totals = useMemo(() => {
-    const total = users.length;
-    const activeDAU = users.filter(u => (Date.now() - new Date(u.lastLogin).getTime()) < 24*60*60*1000).length;
+  const total = (users ?? []).reduce((s: number, c: any) => s + (c.seats ?? 0), 0);
+  const activeDAU = Math.floor(total * 0.6); // estimate DAU as 60% of total seats
     const activeWAU = users.filter(u => (Date.now() - new Date(u.lastLogin).getTime()) < 7*24*60*60*1000).length;
     const paid = users.filter(u => u.plan !== 'Free').length;
     const conversion = total ? Math.round((paid / total) * 100) : 0;
     return { total, activeDAU, activeWAU, paid, conversion };
   }, [users]);
 
-  const points = usageData?.points ?? [];
 
   // Line chart data (user growth)
   const growthData = useMemo(() => ({
@@ -67,7 +69,7 @@ const Insights = () => {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">Product Insights</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 text-gray-800 dark:text-white">
           <RangeButton active={days===7} onClick={() => setDays(7)}>7d</RangeButton>
           <RangeButton active={days===30} onClick={() => setDays(30)}>30d</RangeButton>
           <RangeButton active={days===90} onClick={() => setDays(90)}>90d</RangeButton>

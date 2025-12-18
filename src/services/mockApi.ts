@@ -28,6 +28,10 @@ const save = (users: User[]) =>
 
 const CUST_KEY = 'controlly:customers';
 
+function rand(min: number, max: number) {
+  return Math.round(min + Math.random() * (max - min));
+}
+
 function seedCustomers(count = 200) {
   const plans = ['Free', 'Pro', 'Business'];
   const names = ['Acme Corp', 'Brightside', 'BlueOcean', 'Nova Labs', 'CleverOps', 'Team Alpha', 'Stackworks', 'Orbit Systems'];
@@ -35,17 +39,25 @@ function seedCustomers(count = 200) {
     const name = names[i % names.length] + (i > names.length ? ` ${i}` : '');
     const plan = plans[Math.floor(Math.random() * plans.length)] as any;
     const lastActiveDaysAgo = Math.floor(Math.random() * 120);
+
+    // Seats scale by plan: Free small, Pro medium, Business large
+    const seats =
+      plan === 'Free' ? rand(1, 20)
+      : plan === 'Pro' ? rand(50, 2000)
+      : rand(500, 5000);
+
     return {
       id: i + 1,
       name,
       email: `${name.toLowerCase().replace(/\s+/g, '')}@example.com`,
       plan,
-      seats: Math.max(1, Math.round(Math.random() * (plan === 'Free' ? 5 : plan === 'Pro' ? 25 : 100))),
+      seats,
       lastActive: new Date(Date.now() - (lastActiveDaysAgo * 24 * 60 * 60 * 1000)).toISOString(),
     };
   });
   return customers;
 }
+
 
 export const api = {
   async listUsers() {
@@ -120,21 +132,34 @@ export const api = {
 
   // basic usage metrics generator (mock)
   async getUsage({ days = 30 }: { days?: number } = {}) {
-    await DELAY();
-    // base and trend set high so charts show ~100k+ daily numbers
-    const base = 100_000;
-    const points = Array.from({ length: days }).map((_, i) => {
-      const trend = Math.round(i * 2000); // upward trend across the range
-      return {
-        date: new Date(Date.now() - ((days - i - 1) * 24 * 60 * 60 * 1000)).toISOString(),
-        users: base + trend + Math.round(Math.random() * 20_000),
-        featureA: 2000 + Math.round(Math.random() * 8_000),
-        featureB: 1500 + Math.round(Math.random() * 6_000),
-        featureC: 800 + Math.round(Math.random() * 3_500),
-      };
-    });
-    return { points };
-  },
+  await DELAY();
+
+  // Scale usage based on total seats across customers so DAU <= total seats
+  const customers = await api.getCustomers();
+  const totalSeats = Math.max(1, customers.reduce((s: number, c: any) => s + (c.seats || 0), 0));
+
+  const points = Array.from({ length: days }).map((_, i) => {
+    // small trend + random variation (fraction of totalSeats)
+    const trend = (i / Math.max(1, days - 1)) * 0.4; // up to +40% trend across range
+    const baseFrac = 0.10 + Math.random() * 0.5; // 10% - 60% of seats
+    const frac = Math.min(0.95, baseFrac + trend);
+    const users = Math.max(1, Math.round(totalSeats * frac));
+
+    const featureA = Math.round(totalSeats * (0.01 + Math.random() * 0.04)); // 1%-5% of seats
+    const featureB = Math.round(totalSeats * (0.008 + Math.random() * 0.03));
+    const featureC = Math.round(totalSeats * (0.003 + Math.random() * 0.02));
+
+    return {
+      date: new Date(Date.now() - ((days - i - 1) * 24 * 60 * 60 * 1000)).toISOString(),
+      users,
+      featureA,
+      featureB,
+      featureC,
+    };
+  });
+
+  return { points };
+},
   // simple plans stored in localStorage
  async getPlans() {
   await DELAY();

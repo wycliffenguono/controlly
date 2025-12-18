@@ -28,7 +28,7 @@ const { data: customersData = [], loading } = useAsync(() => api.getCustomers(),
   const activeWAU = points.length ? Math.round(points.slice(-7).reduce((s, p) => s + p.users, 0) / Math.min(7, points.length)) : customers.filter(u => (Date.now() - new Date(u.lastLogin).getTime()) < 7*24*60*60*1000).length;
 
   const totals = useMemo(() => {
-    const total = customers.length;
+  const total = (customers ?? []).reduce((s: number, c: any) => s + (c.seats ?? 0), 0);
     const paid = customers.filter(u => u.plan !== 'Free').length;
     const conversion = total ? Math.round((paid / total) * 100) : 0;
     const teams = Math.max(1, Math.ceil(total / 5));
