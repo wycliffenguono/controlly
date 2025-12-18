@@ -10,7 +10,7 @@ import { useSearchParams } from 'react-router-dom';
 
 const pageSize = 6;
 
-const Users = () => {
+const Staff = () => {
   const { data: dataRaw, loading, error, execute } = useAsync(() => api.listUsers(), []);
   const toast = useToast();
   const { user } = useAuth();
@@ -53,6 +53,21 @@ const Users = () => {
       toast.add({ kind: 'error', title: 'Could not deactivate user', message: (e as any).message });
     }
   };
+
+  const handleActivate = async (id: number) => {
+  if (!isAdmin) {
+    toast.add({ kind: 'error', title: 'Unauthorized', message: 'Only Admins can activate users' });
+    return;
+  }
+  if (!confirm('Activate this staff account?')) return;
+  try {
+    await api.activateUser(id);
+    toast.add({ kind: 'success', title: 'User activated' });
+    await execute();
+  } catch (e) {
+    toast.add({ kind: 'error', title: 'Could not activate user', message: (e as any).message });
+  }
+};
 
   const handleSave = async (payload: Partial<User>) => {
     try {
@@ -122,13 +137,24 @@ const Users = () => {
                     >
                       Edit
                     </button>
-                    <button
-                      onClick={() => handleDeactivate(u.id)}
-                      className="px-2 py-1 rounded border text-red-600"
-                      disabled={!isAdmin}
-                    >
-                      Deactivate
-                    </button>
+
+                    {u.status === 'inactive' ? (
+                      <button
+                        onClick={() => handleActivate(u.id)}
+                        className="px-2 py-1 rounded border text-green-600"
+                        disabled={!isAdmin}
+                      >
+                        Activate
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleDeactivate(u.id)}
+                        className="px-2 py-1 rounded border text-red-600"
+                        disabled={!isAdmin}
+                      >
+                        Deactivate
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -182,7 +208,7 @@ function UserForm({ user, onSave, onCancel }: { user?: Partial<User>, onSave: (u
         </div>
         <div>
           <label className="block text-sm">Role</label>
-          <select value={role} onChange={e => setRole(e.target.value as "Admin" | "Staff")} className="w-full px-3 py-2 border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+          <select value={role} onChange={e => setRole(e.target.value as "Admin" | "Staff")} className="w-full px-3 py-2 border rounded bg-white dark:bg-gray-700 text-gray-900">
             <option>Admin</option>
             <option>Staff</option>
           </select>
@@ -196,4 +222,4 @@ function UserForm({ user, onSave, onCancel }: { user?: Partial<User>, onSave: (u
   );
 }
 
-export default Users;
+export default Staff;

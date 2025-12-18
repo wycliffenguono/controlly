@@ -81,7 +81,9 @@ export const api = {
   async deactivateUser(id: number) {
     return api.updateUser(id, { status: 'inactive' });
   },
-
+  async activateUser(id: number) {
+    return api.updateUser(id, { status: 'active' });
+  },
   async getCustomers() {
     await DELAY();
     const raw = localStorage.getItem(CUST_KEY);

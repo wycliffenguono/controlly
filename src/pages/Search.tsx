@@ -1,4 +1,3 @@
-// src/pages/Search.tsx
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import useAsync from '../hooks/useAsync';

@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
 import Dashboard from './pages/Dashboard';
-import Users from './pages/Users';
+import Users from './pages/Staff';
 import Insights from './pages/Insights';
 import Pricing from './pages/Pricing';
 import Login from './pages/Login';
