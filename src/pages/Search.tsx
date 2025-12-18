@@ -10,15 +10,18 @@ export default function Search() {
   const { data: staff = [] } = useAsync(() => api.listUsers(), []);
   const { data: customers = [] } = useAsync(() => api.getCustomers(), []);
 
+  const staffList = staff ?? [];
+ const customerList = customers ?? [];
+
   const staffMatches = useMemo(() => {
     if (!q) return [];
-    return (staff as any[]).filter(s => `${s.name} ${s.email} ${s.role}`.toLowerCase().includes(q));
-  }, [staff, q]);
+    return (staffList as any[]).filter(s => `${s.name} ${s.email} ${s.role}`.toLowerCase().includes(q));
+  }, [staffList, q]);
 
   const customerMatches = useMemo(() => {
     if (!q) return [];
-    return (customers as any[]).filter(c => `${c.name} ${c.email} ${c.plan}`.toLowerCase().includes(q));
-  }, [customers, q]);
+    return (customerList as any[]).filter(c => `${c.name} ${c.email} ${c.plan}`.toLowerCase().includes(q));
+  }, [customerList, q]);
 
   return (
     <div>
