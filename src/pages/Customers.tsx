@@ -39,9 +39,9 @@ export default function Customers() {
   }, [customers]);
 
   const donutData = {
-    labels: ['Free', 'Pro', 'Business'],
+    labels: ['Free', 'Pro', 'Business'] as string[],
     datasets: [{ data: [planCounts.Free, planCounts.Pro, planCounts.Business], backgroundColor: ['#E5E7EB', '#60A5FA', '#7C3AED'] }],
-  } as const;
+  };
 
   return (
     <div className="text-gray-700 dark:text-gray-200">

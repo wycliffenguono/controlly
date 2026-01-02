@@ -29,7 +29,7 @@ const Insights = () => {
     const list = users ?? [];
     const total = list.reduce((s: number, c: Customer) => s + (c.seats ?? 0), 0);
     const activeDAU = Math.floor(total * 0.6); // estimate DAU as 60% of total seats
-    const activeWAU = list.filter(u => (Date.now() - new Date(u.lastLogin).getTime()) < 7*24*60*60*1000).length;
+    const activeWAU = list.filter(u => (Date.now() - new Date(u.lastActive).getTime()) < 7*24*60*60*1000).length;
     const paid = list.filter(u => u.plan !== 'Free').length;
     const conversion = total ? Math.round((paid / total) * 100) : 0;
     return { total, activeDAU, activeWAU, paid, conversion };

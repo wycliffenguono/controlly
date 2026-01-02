@@ -24,8 +24,8 @@ const { data: customersData = [], loading } = useAsync(() => api.getCustomers(),
   const points = usageData?.points ?? [];
 
   // Use usage points for DAU/WAU numbers
-  const activeDAU = points.length ? points[points.length - 1].users : customers.filter(u => (Date.now() - new Date(u.lastLogin).getTime()) < 24*60*60*1000).length;
-  const activeWAU = points.length ? Math.round(points.slice(-7).reduce((s, p) => s + p.users, 0) / Math.min(7, points.length)) : customers.filter(u => (Date.now() - new Date(u.lastLogin).getTime()) < 7*24*60*60*1000).length;
+  const activeDAU = points.length ? points[points.length - 1].users : customers.filter(u => (Date.now() - new Date(u.lastActive).getTime()) < 24*60*60*1000).length;
+  const activeWAU = points.length ? Math.round(points.slice(-7).reduce((s, p) => s + p.users, 0) / Math.min(7, points.length)) : customers.filter(u => (Date.now() - new Date(u.lastActive).getTime()) < 7*24*60*60*1000).length;
 
   const totals = useMemo(() => {
     const list = customers ?? [];
