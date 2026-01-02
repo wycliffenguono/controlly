@@ -2,7 +2,8 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 
 type Toast = { id: string; kind?: 'success'|'error'|'info'; title: string; message?: string };
-const ToastContext = createContext<any>(null);
+type ToastContextType = { add: (t: Omit<Toast,'id'>) => void; remove: (id: string) => void };
+const ToastContext = createContext<ToastContextType | null>(null);
 
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);

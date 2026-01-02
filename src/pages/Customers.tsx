@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import useDebouncedValue from '../hooks/useDebouncedValue';
 import useAsync from '../hooks/useAsync';
 import { api } from '../services/mockApi';
+import type { Customer } from '../types';
 import { useSearchParams } from 'react-router-dom';
 import { Doughnut } from 'react-chartjs-2';
 
@@ -11,7 +12,7 @@ const nf = new Intl.NumberFormat();
 
 export default function Customers() {
   const { data, loading } = useAsync(() => api.getCustomers(), []);
-  const customers = data ?? [];
+  const customers: Customer[] = useMemo(() => (data ?? []) as Customer[], [data]);
 
 
   
@@ -24,22 +25,23 @@ export default function Customers() {
   useEffect(() => setQuery(initialQ), [initialQ]);
 
   const filtered = useMemo(() => {
-    if (!debounced) return customers;
-    return customers.filter((c: any) => `${c.name} ${c.email} ${c.plan}`.toLowerCase().includes(debounced.toLowerCase()));
+    const list = customers ?? [];
+    if (!debounced) return list;
+    return list.filter((c: Customer) => `${c.name} ${c.email} ${c.plan}`.toLowerCase().includes(debounced.toLowerCase()));
   }, [customers, debounced]);
 
   const paged = useMemo(() => filtered.slice((page - 1) * pageSize, page * pageSize), [filtered, page]);
 
   const planCounts = useMemo(() => {
-    const map: any = { Free: 0, Pro: 0, Business: 0 };
-    customers.forEach((c: any) => map[c.plan]++);
+    const map: Record<string, number> = { Free: 0, Pro: 0, Business: 0 };
+    customers.forEach((c: Customer) => map[c.plan]++);
     return map;
   }, [customers]);
 
   const donutData = {
     labels: ['Free', 'Pro', 'Business'],
     datasets: [{ data: [planCounts.Free, planCounts.Pro, planCounts.Business], backgroundColor: ['#E5E7EB', '#60A5FA', '#7C3AED'] }],
-  };
+  } as const;
 
   return (
     <div className="text-gray-700 dark:text-gray-200">
@@ -67,7 +69,7 @@ export default function Customers() {
               </thead>
               <tbody>
                 {loading && <tr><td colSpan={4} className="p-6 text-center text-gray-500 dark:text-gray-300">Loading…</td></tr>}
-                {!loading && paged.map((c: any) => (
+                {!loading && paged.map((c: Customer) => (
                   <tr key={c.id} className="border-t">
                     <td className="p-3">{c.name}<div className="text-xs text-gray-500 dark:text-gray-300">{c.email}</div></td>
                     <td className="p-3">{nf.format(c.seats)}</td>
@@ -91,7 +93,7 @@ export default function Customers() {
 
         <div className="p-4 bg-white dark:bg-gray-800 rounded shadow">
           <div className="text-sm text-gray-500 dark:text-gray-300">Subscription distribution</div>
-          <div className="mt-4"><Doughnut data={donutData as any} /></div>
+          <div className="mt-4"><Doughnut data={donutData} /></div>
         </div>
       </div>
     </div>

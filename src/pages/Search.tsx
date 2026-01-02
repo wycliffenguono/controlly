@@ -1,26 +1,29 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import useAsync from '../hooks/useAsync';
 import { api } from '../services/mockApi';
+import type { User, Customer } from '../types';
 
 export default function Search() {
   const [searchParams] = useSearchParams();
   const q = (searchParams.get('q') ?? '').trim().toLowerCase();
 
-  const { data: staff = [] } = useAsync(() => api.listUsers(), []);
-  const { data: customers = [] } = useAsync(() => api.getCustomers(), []);
+  const { data: staff = [] } = useAsync<User[]>(() => api.listUsers(), []);
+  const { data: customers = [] } = useAsync<Customer[]>(() => api.getCustomers(), []);
 
-  const staffList = staff ?? [];
- const customerList = customers ?? [];
+  const staffList: User[] = useMemo(() => (staff ?? []) as User[], [staff]);
+  const customerList: Customer[] = useMemo(() => (customers ?? []) as Customer[], [customers]);
 
   const staffMatches = useMemo(() => {
     if (!q) return [];
-    return (staffList as any[]).filter(s => `${s.name} ${s.email} ${s.role}`.toLowerCase().includes(q));
+    const list = staffList ?? [];
+    return list.filter(s => `${s.name} ${s.email} ${s.role}`.toLowerCase().includes(q));
   }, [staffList, q]);
 
   const customerMatches = useMemo(() => {
     if (!q) return [];
-    return (customerList as any[]).filter(c => `${c.name} ${c.email} ${c.plan}`.toLowerCase().includes(q));
+    const list = customerList ?? [];
+    return list.filter(c => `${c.name} ${c.email} ${c.plan}`.toLowerCase().includes(q));
   }, [customerList, q]);
 
   return (

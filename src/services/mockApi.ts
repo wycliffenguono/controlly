@@ -1,6 +1,6 @@
 // src/services/mockApi.ts
-import { users as seedUsers, User as SeedUser } from '../../users';
-import type { User } from '../types';
+import { users as seedUsers } from '../../users';
+import type { User, Customer, PlanDef } from '../types';
 
 const STORAGE_KEY = 'controlly:users';
 const DELAY = (ms = 400) =>
@@ -37,7 +37,7 @@ function seedCustomers(count = 200) {
   const names = ['Acme Corp', 'Brightside', 'BlueOcean', 'Nova Labs', 'CleverOps', 'Team Alpha', 'Stackworks', 'Orbit Systems'];
   const customers = Array.from({ length: count }).map((_, i) => {
     const name = names[i % names.length] + (i > names.length ? ` ${i}` : '');
-    const plan = plans[Math.floor(Math.random() * plans.length)] as any;
+    const plan = plans[Math.floor(Math.random() * plans.length)] as Customer['plan'];
     const lastActiveDaysAgo = Math.floor(Math.random() * 120);
 
     // Seats scale by plan: Free small, Pro medium, Business large
@@ -50,7 +50,7 @@ function seedCustomers(count = 200) {
       id: i + 1,
       name,
       email: `${name.toLowerCase().replace(/\s+/g, '')}@example.com`,
-      plan,
+      plan: plan as Customer['plan'],
       seats,
       lastActive: new Date(Date.now() - (lastActiveDaysAgo * 24 * 60 * 60 * 1000)).toISOString(),
     };
@@ -75,7 +75,7 @@ export const api = {
     const data = load();
     const id = Math.max(0, ...data.map(u => u.id)) + 1;
     // Ensure staff created without a plan in UI still get a default plan for data integrity
-    const user: User = { id, ...payload, plan: (payload as any).plan ?? 'Free' };
+    const user: User = { id, ...payload, plan: payload.plan ?? 'Free' };
     data.unshift(user);
     save(data);
     return user;
@@ -116,14 +116,14 @@ export const api = {
   async getCustomer(id: number) {
     await DELAY();
     const arr = await api.getCustomers();
-    return arr.find((c: any) => c.id === id) ?? null;
+    return (arr as Customer[]).find((c: Customer) => c.id === id) ?? null;
   },
 
   // keep update hooks if needed (simple patching)
-  async updateCustomer(id: number, patch: Partial<any>) {
+  async updateCustomer(id: number, patch: Partial<Customer>) {
     await DELAY();
     const arr = await api.getCustomers();
-    const idx = arr.findIndex((c: any) => c.id === id);
+    const idx = (arr as Customer[]).findIndex((c: Customer) => c.id === id);
     if (idx === -1) throw new Error('Customer not found');
     arr[idx] = { ...arr[idx], ...patch };
     localStorage.setItem(CUST_KEY, JSON.stringify(arr));
@@ -135,8 +135,8 @@ export const api = {
   await DELAY();
 
   // Scale usage based on total seats across customers so DAU <= total seats
-  const customers = await api.getCustomers();
-  const totalSeats = Math.max(1, customers.reduce((s: number, c: any) => s + (c.seats || 0), 0));
+  const customers = (await api.getCustomers()) as Customer[];
+  const totalSeats = Math.max(1, customers.reduce((s: number, c: Customer) => s + (c.seats || 0), 0));
 
   const points = Array.from({ length: days }).map((_, i) => {
     // small trend + random variation (fraction of totalSeats)
@@ -161,7 +161,7 @@ export const api = {
   return { points };
 },
   // simple plans stored in localStorage
- async getPlans() {
+  async getPlans() {
   await DELAY();
   const raw = localStorage.getItem('controlly:plans');
 
@@ -175,7 +175,7 @@ export const api = {
     }
   }
 
-  const plans = [
+  const plans: PlanDef[] = [
     { id: 'free', name: 'Free', limits: { projects: 3, seats: 5 }, price: 0 },
     { id: 'pro', name: 'Pro', limits: { projects: 50, seats: 25 }, price: 49 },
     { id: 'business', name: 'Business', limits: { projects: 500, seats: 250 }, price: 299 },
@@ -184,10 +184,10 @@ export const api = {
   return plans;
 },
 
-  async updatePlan(id: string, patch: any) {
+  async updatePlan(id: string, patch: Partial<PlanDef>) {
     await DELAY();
     const plans = await api.getPlans();
-    const idx = plans.findIndex((p: any) => p.id === id);
+    const idx = (plans as PlanDef[]).findIndex((p: PlanDef) => p.id === id);
     if (idx === -1) throw new Error('Plan not found');
     plans[idx] = { ...plans[idx], ...patch };
     localStorage.setItem('controlly:plans', JSON.stringify(plans));

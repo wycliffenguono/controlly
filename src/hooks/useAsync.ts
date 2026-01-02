@@ -1,7 +1,7 @@
 // src/hooks/useAsync.ts
 import { useCallback, useEffect, useState } from 'react';
 
-export default function useAsync<T>(fn: () => Promise<T>, deps: any[] = []) {
+export default function useAsync<T>(fn: () => Promise<T>, deps: React.DependencyList = []) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -13,9 +13,10 @@ export default function useAsync<T>(fn: () => Promise<T>, deps: any[] = []) {
       const res = await fn();
       setData(res);
       return res;
-    } catch (err: any) {
-      setError(err);
-      throw err;
+    } catch (err: unknown) {
+      const e = err instanceof Error ? err : new Error(String(err));
+      setError(e);
+      throw e;
     } finally {
       setLoading(false);
     }

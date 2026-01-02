@@ -12,3 +12,19 @@ export interface User {
   plan: Plan;
   lastLogin: string;
 }
+
+export interface Customer {
+  id: number;
+  name: string;
+  email: string;
+  plan: Plan;
+  seats: number;
+  lastActive: string;
+}
+
+export interface PlanDef {
+  id: string;
+  name: string;
+  limits: { projects: number; seats: number };
+  price: number;
+}

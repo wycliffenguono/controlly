@@ -4,22 +4,24 @@ import { api } from '../services/mockApi';
 import { useToast } from '../components/ToastProvider';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
+import type { PlanDef } from '../types';
 
 const Pricing = () => {
   const { data: plansData, loading, error, execute } = useAsync(() => api.getPlans(), []);
-  const plans = plansData ?? [];
-  const [editing, setEditing] = useState<any | null>(null);
+  const plans: PlanDef[] = (plansData ?? []) as PlanDef[];
+  const [editing, setEditing] = useState<PlanDef | null>(null);
   const toast = useToast();
   const { user } = useAuth();
 
-  const savePlan = async (id: string, patch: any) => {
+  const savePlan = async (id: string, patch: Partial<PlanDef>) => {
     try {
       await api.updatePlan(id, patch);
       toast.add({ kind: 'success', title: 'Plan updated' });
       await execute();
       setEditing(null);
     } catch (e) {
-      toast.add({ kind: 'error', title: 'Update failed', message: (e as any).message });
+      const err = e instanceof Error ? e : new Error(String(e));
+      toast.add({ kind: 'error', title: 'Update failed', message: err.message });
     }
   };
 
@@ -58,7 +60,7 @@ const Pricing = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-        {plans.map((p: any) => (
+        {plans.map((p: PlanDef) => (
           <div key={p.id} className="p-4 bg-white dark:bg-gray-800 rounded shadow">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{p.name}</h3>
@@ -90,9 +92,9 @@ const Pricing = () => {
   );
 };
 
-function PlanEdit({ plan, onSave, onCancel }: any) {
-  const [projects, setProjects] = useState(plan.limits?.projects ?? 0);
-  const [seats, setSeats] = useState(plan.limits?.seats ?? 0);
+function PlanEdit({ plan, onSave, onCancel }: { plan: PlanDef; onSave: (id: string, patch: Partial<PlanDef>) => Promise<void>; onCancel: () => void }) {
+  const [projects, setProjects] = useState<number>(plan.limits?.projects ?? 0);
+  const [seats, setSeats] = useState<number>(plan.limits?.seats ?? 0);
 
   return (
     <div>

@@ -1,6 +1,6 @@
 import { Search, Bell, Moon, Sun, Menu } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
 type Props = { onMenuToggle?: () => void };

@@ -11,7 +11,7 @@ import { useSearchParams } from 'react-router-dom';
 const pageSize = 6;
 
 const Staff = () => {
-  const { data: dataRaw, loading, error, execute } = useAsync(() => api.listUsers(), []);
+  const { data: dataRaw, loading, error, execute } = useAsync<User[]>(() => api.listUsers(), []);
   const toast = useToast();
   const { user } = useAuth();
   const isAdmin = user?.role === 'Admin';
@@ -22,19 +22,18 @@ const Staff = () => {
   const [editing, setEditing] = useState<User | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
-  const users = dataRaw ?? [];
+  const users: User[] = useMemo(() => (dataRaw ?? []) as User[], [dataRaw]);
 
   const [searchParams] = useSearchParams();
   useEffect(() => {
     const q = searchParams.get('q') ?? '';
     if (q !== query) setQuery(q);
-  }, [searchParams]);
+  }, [searchParams, query]);
 
   const filtered = useMemo(() => {
-    if (!debounced) return users;
-    return users.filter(u =>
-      [u.name, u.email, u.role].join(' ').toLowerCase().includes(debounced.toLowerCase())
-    );
+    const list = users ?? [];
+    if (!debounced) return list;
+    return list.filter(u => [u.name, u.email, u.role].join(' ').toLowerCase().includes(debounced.toLowerCase()));
   }, [users, debounced]);
 
   const paged = useMemo(() => filtered.slice((page - 1) * pageSize, page * pageSize), [filtered, page]);
@@ -50,7 +49,8 @@ const Staff = () => {
       toast.add({ kind: 'success', title: 'User deactivated' });
       await execute();
     } catch (e) {
-      toast.add({ kind: 'error', title: 'Could not deactivate user', message: (e as any).message });
+      const err = e instanceof Error ? e : new Error(String(e));
+      toast.add({ kind: 'error', title: 'Could not deactivate user', message: err.message });
     }
   };
 
@@ -65,25 +65,27 @@ const Staff = () => {
     toast.add({ kind: 'success', title: 'User activated' });
     await execute();
   } catch (e) {
-    toast.add({ kind: 'error', title: 'Could not activate user', message: (e as any).message });
+    const err = e instanceof Error ? e : new Error(String(e));
+    toast.add({ kind: 'error', title: 'Could not activate user', message: err.message });
   }
 };
 
   const handleSave = async (payload: Partial<User>) => {
     try {
-      if ((payload as any).id) {
-        await api.updateUser((payload as any).id, payload as any);
+      if (typeof payload.id === 'number') {
+        await api.updateUser(payload.id, payload as Partial<User>);
         toast.add({ kind: 'success', title: 'User updated' });
       } else {
         // Ensure staff users created here default to 'Free' plan (customers manage plans separately)
-        await api.createUser({ ...payload, plan: payload.plan ?? 'Free' } as any);
+        await api.createUser({ ...(payload as Omit<User, 'id'>), plan: payload.plan ?? 'Free' });
         toast.add({ kind: 'success', title: 'User created' });
       }
       setEditing(null);
       setShowCreate(false);
       await execute();
     } catch (e) {
-      toast.add({ kind: 'error', title: 'Save failed', message: (e as any).message });
+      const err = e instanceof Error ? e : new Error(String(e));
+      toast.add({ kind: 'error', title: 'Save failed', message: err.message });
     }
   };
 
@@ -191,7 +193,7 @@ function UserForm({ user, onSave, onCancel }: { user?: Partial<User>, onSave: (u
 
   const submit = () => {
     if (!name || !email) return;
-    onSave({ ...(user ?? {}), name, email, role: role as any });
+    onSave({ ...(user ?? {}), name, email, role: role as User['role'] });
   };
 
   return (

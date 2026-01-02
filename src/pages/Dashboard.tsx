@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import useAsync from '../hooks/useAsync';
 import { api } from '../services/mockApi';
-import type { User } from '../types';
+import type { Customer } from '../types';
 import { Doughnut, Line } from 'react-chartjs-2';
 
 type UsagePoint = { date: string; users: number; featureA: number; featureB: number; featureC: number };
@@ -18,7 +18,7 @@ const StatCard = ({ title, value }: { title: string; value: string | number }) =
 
 const Dashboard = () => {
 const { data: customersData = [], loading } = useAsync(() => api.getCustomers(), []);
-  const customers = customersData ?? [];
+  const customers: Customer[] = useMemo(() => (customersData ?? []) as Customer[], [customersData]);
 
   const { data: usageData } = useAsync<UsageResponse>(() => api.getUsage({ days: 30 }), []);
   const points = usageData?.points ?? [];
@@ -28,16 +28,18 @@ const { data: customersData = [], loading } = useAsync(() => api.getCustomers(),
   const activeWAU = points.length ? Math.round(points.slice(-7).reduce((s, p) => s + p.users, 0) / Math.min(7, points.length)) : customers.filter(u => (Date.now() - new Date(u.lastLogin).getTime()) < 7*24*60*60*1000).length;
 
   const totals = useMemo(() => {
-  const total = (customers ?? []).reduce((s: number, c: any) => s + (c.seats ?? 0), 0);
-    const paid = customers.filter(u => u.plan !== 'Free').length;
+    const list = customers ?? [];
+    const total = list.reduce((s: number, c: Customer) => s + (c.seats ?? 0), 0);
+    const paid = list.filter((u: Customer) => u.plan !== 'Free').length;
     const conversion = total ? Math.round((paid / total) * 100) : 0;
     const teams = Math.max(1, Math.ceil(total / 5));
     return { total, conversion, teams, paid };
   }, [customers]);
 
   const planCounts = useMemo(() => {
-    const map = { Free: 0, Pro: 0, Business: 0 } as any;
-    customers.forEach(u => map[u.plan]++);
+    const list = customers ?? [];
+    const map: Record<string, number> = { Free: 0, Pro: 0, Business: 0 };
+    list.forEach((u: Customer) => map[u.plan]++);
     return map;
   }, [customers]);
 
@@ -68,7 +70,7 @@ const { data: customersData = [], loading } = useAsync(() => api.getCustomers(),
         <div className="col-span-2 p-4 bg-white dark:bg-gray-800 rounded shadow">
           <div className="text-sm text-gray-500">User growth (last 30 days)</div>
           <div className="mt-4">
-            {points.length ? <Line data={growthData as any} /> : <div className="text-gray-500">Loading or no data</div>}
+            {points.length ? <Line data={growthData} /> : <div className="text-gray-500">Loading or no data</div>}
           </div>
         </div>
 
@@ -79,7 +81,7 @@ const { data: customersData = [], loading } = useAsync(() => api.getCustomers(),
           </div>
 
           <div className="mt-4">
-            <Doughnut data={donutData as any} />
+            <Doughnut data={donutData} />
           </div>
         </div>
       </div>
